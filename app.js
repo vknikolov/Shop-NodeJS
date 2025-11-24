@@ -17,10 +17,16 @@ const User = require("./models/user");
 const MONGODB_URI = process.env.MONGODB_URI;
 
 const app = express();
-const store = new MongoDBStore({
-  uri: MONGODB_URI,
-  collection: "sessions",
-});
+const store = new MongoDBStore(
+  {
+    uri: MONGODB_URI,
+    collection: "sessions",
+  },
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }
+);
 const csrfProtection = csrf();
 
 const fileStorage = multer.diskStorage({
@@ -111,7 +117,10 @@ app.use((error, request, response, next) => {
 });
 
 mongoose
-  .connect(MONGODB_URI)
+  .connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then((result) => {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
