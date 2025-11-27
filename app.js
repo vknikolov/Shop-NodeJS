@@ -21,10 +21,6 @@ const store = new MongoDBStore(
   {
     uri: MONGODB_URI,
     collection: "sessions",
-  },
-  {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
   }
 );
 const csrfProtection = csrf();
@@ -59,11 +55,6 @@ const authRoutes = require("./routes/auth");
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(
-  multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
-);
-app.use(express.static(path.join(__dirname, "public")));
-app.use("/images", express.static(path.join(__dirname, "images")));
-app.use(
   session({
     secret: process.env.SESSION_SECRET || "my secret",
     resave: false,
@@ -71,11 +62,17 @@ app.use(
     store: store,
   })
 );
+app.use(
+  multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
+);
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/images", express.static(path.join(__dirname, "images")));
+
 app.use(csrfProtection);
 app.use(flash());
 
 app.use((request, response, next) => {
-  response.locals.isAuthenticated = request.session.isLoggedIn;
+  response.locals.isAuthenticated = request.session ? request.session.isLoggedIn : false;
   response.locals.csrfToken = request.csrfToken();
   next();
 });
@@ -107,20 +104,18 @@ app.get("/500", errorController.get500);
 app.use(errorController.get404);
 
 app.use((error, request, response, next) => {
+  console.log(error);
   // response.status(error.httpStatusCode).render(...);
   // response.redirect('/500');
   response.status(500).render("500", {
     pageTitle: "Error!",
     path: "/500",
-    isAuthenticated: request.session.isLoggedIn,
+    isAuthenticated: request.session ? request.session.isLoggedIn : false,
   });
 });
 
 mongoose
-  .connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(MONGODB_URI)
   .then((result) => {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
